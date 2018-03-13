@@ -72,13 +72,29 @@ start_process (void *file_name_)
   char *file_name = file_name_;
   struct intr_frame if_;
   bool success;
+  char *rest;
+  char *token;
+
+  int arguments_length = strlen (file_name) + 1;
+
+  char *exec_file_name = strtok_r (file_name, " ", &rest);
 
   /* Initialize interrupt frame and load executable. */
   memset (&if_, 0, sizeof if_);
   if_.gs = if_.fs = if_.es = if_.ds = if_.ss = SEL_UDSEG;
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
-  success = load (file_name, &if_.eip, &if_.esp);
+  success = load (exec_file_name, &if_.eip, &if_.esp);
+
+  char **args = (char **) malloc (arguments_length * sizeof(char));
+  /* Tokenising rest of arguments */
+  int argc     = 0;
+  args[argc++] = exec_file_name;
+
+  while((token = strtok_r(NULL, " ", &rest))) {
+    arguments_length += strlen (token) + 1;
+    args[argc++]     = token;
+  }
 
   /* If load failed, quit. */
   palloc_free_page (file_name);
